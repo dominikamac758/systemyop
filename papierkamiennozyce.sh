@@ -1,5 +1,5 @@
 #!/bin/bash
-# Autor: Oliwia Waszczuk
+# Autor: Dominika Maciejewska
 # Informatyka Medyczna, stopień I, semestr 3, 2025/2026
 
 list=("kamien", "papier", "nozyce")
