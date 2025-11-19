@@ -77,3 +77,47 @@ drugi terminal:
 ps -o pid,ppid,cmd --forest | grep -E "system|another|sh -c" -n
 
 
+
+another:
+#include <stdio.h>
+#include <unistd.h>
+
+int main() {
+    printf("Hello, I'm another program! My PID = %d\n", getpid());
+    fflush(stdout);
+    getchar();   // ważne, żeby proces żył!
+    return 0;
+}
+
+exec:
+#include <stdio.h>
+#include <unistd.h>
+
+int main() {
+    printf("Hello, I'm exec program! My PID = %d\n", getpid());
+    fflush(stdout);
+
+    execl("./another", "another", NULL);
+
+    printf("Hello, I'm again exec program! My PID = %d\n", getpid());
+    fflush(stdout);
+
+    return 0;
+}
+
+system:
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+int main() {
+    printf("Hello, I'm system program! My PID = %d\n", getpid());
+    fflush(stdout);
+
+    system("./another");
+
+    printf("Hello, I'm again system program! My PID = %d\n", getpid());
+    fflush(stdout);
+
+    return 0;
+}
