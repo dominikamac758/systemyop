@@ -707,3 +707,122 @@ Jeśli Python i matplotlib są zainstalowane, otrzymasz:
     plik PNG zapisany jako:
 
 wykres_speedup.png
+
+Nazwijmy program psum_autotune.c.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <time.h>
+#include <sys/time.h>
+
+int *array;
+int n, k, t;
+long *partial_sums;
+
+void* worker(void* arg) {
+    long tid = (long)arg;
+
+    for (int i = tid; i < k; i += t) {
+        long sum = 0;
+        int start = i * n;
+        for (int j = 0; j < n; j++)
+            sum += array[start + j];
+        partial_sums[i] = sum;
+    }
+    return NULL;
+}
+
+long long time_us() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (long long)tv.tv_sec * 1000000LL + tv.tv_usec;
+}
+
+long long run_once(int n_val, int k_val, int t_val) {
+
+    long total = n_val * k_val;
+
+    // alokacja
+    array = malloc(total * sizeof(int));
+    partial_sums = calloc(k_val, sizeof(long));
+
+    // losowanie danych
+    for (long i = 0; i < total; i++)
+        array[i] = rand() % 10;
+
+    n = n_val;
+    k = k_val;
+    t = t_val;
+
+    // pomiar czasu
+    long long start = time_us();
+
+    pthread_t *threads = malloc(t * sizeof(pthread_t));
+    for (long i = 0; i < t; i++)
+        pthread_create(&threads[i], NULL, worker, (void*)i);
+
+    for (int i = 0; i < t; i++)
+        pthread_join(threads[i], NULL);
+
+    long long end = time_us();
+    long long elapsed = end - start;
+
+    free(array);
+    free(partial_sums);
+    free(threads);
+
+    return elapsed;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Użycie: ./psum_autotune <m>\n");
+        return 1;
+    }
+
+    long m = atol(argv[1]);
+
+    long long best_time = 1e18;
+    int best_n = 0, best_k = 0, best_t = 0;
+
+    printf("Autotuning dla m = %ld...\n", m);
+
+    // testujemy parametry
+    for (int n_val = 1000; n_val <= m; n_val *= 2) {
+        if (m % n_val != 0) continue;
+        int k_val = m / n_val;
+
+        for (int t_val = 1; t_val <= 32; t_val *= 2) {
+            long long time = run_once(n_val, k_val, t_val);
+            printf("n=%d k=%d t=%d  -> %lld us\n",
+                   n_val, k_val, t_val, time);
+
+            if (time < best_time) {
+                best_time = time;
+                best_n = n_val;
+                best_k = k_val;
+                best_t = t_val;
+            }
+        }
+    }
+
+    printf("\n=== NAJLEPSZA KONFIGURACJA ===\n");
+    printf("n = %d\n", best_n);
+    printf("k = %d\n", best_k);
+    printf("t = %d\n", best_t);
+    printf("czas = %lld us\n", best_time);
+
+    return 0;
+}
+gcc -pthread psum_autotune.c -o psum_autotune
+
+✅ 4. Uruchom AUTOTUNE
+
+Na przykład dla:
+
+m = 80000000
+
+Wpisz:
+
+./psum_autotune 80000000
