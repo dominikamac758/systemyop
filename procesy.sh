@@ -62,8 +62,7 @@ ps -p 12345 -o pid,ppid,cmd
 ./exec
 
 ps -o pid,ppid,cmd --forest | grep -E "exec|another"
-12345 ./exec
-  └─(podmieniony na) another
+
 
 ./system
 
