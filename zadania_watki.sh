@@ -55,10 +55,9 @@ int main(int argc, char *argv[]) {
     for (long i = 0; i < rozmiar_calkowity; i++) {
         tablica[i] = rand() % 10;
     }
-
-    // -----------------------------
+    
     // SUMOWANIE SEKWENCYJNE
-    // -----------------------------
+  
     double czas_start_sekw = zmierz_czas();
 
     ll suma_sekwencyjna = 0;
@@ -72,9 +71,7 @@ int main(int argc, char *argv[]) {
     printf("\nCzas sekwencyjny: %.2f mikrosekund", czas_koniec_sekw - czas_start_sekw);
 
 
-    // -------------------------------------
     // SUMOWANIE WIELOWĄTKOWE
-    // -------------------------------------
 
     long podtablice_na_watek = k / t;   // ile pełnych podtablic dostaje każdy wątek
     long nadmiarowe = k % t;            // jeśli nie dzieli się równo, część wątków dostaje 1 więcej
