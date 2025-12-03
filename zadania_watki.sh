@@ -294,5 +294,13 @@ plt.show()
 
 python3 wykres_speedup.py
 
-
+# Wykres speedupu
+#plt.figure(figsize=(10,5))
+#plt.plot(df['t'], df['speedup'], marker='o', color='green', label='Speedup')
+#plt.xlabel("Liczba wątków")
+#plt.ylabel("Speedup")
+#plt.title(f"Speedup vs liczba wątków (n={n_val}, k={k_val})")
+#plt.grid(True)
+#plt.legend()
+#plt.show()
 
