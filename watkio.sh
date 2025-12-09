@@ -103,3 +103,117 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <sys/time.h>
+
+typedef long long ll;
+
+// Struktura danych dla wątku
+typedef struct {
+    int *tablica;        // wskaźnik do całej tablicy liczb
+    long indeks_start;   // indeks startowy fragmentu tablicy
+    long indeks_koniec;  // indeks końcowy fragmentu tablicy
+    ll *wynik;           // wskaźnik do miejsca, gdzie zapisujemy wynik
+} DaneWatku;
+
+// Funkcja wykonywana przez wątek – sumuje przydzielony fragment tablicy
+void* sumuj_fragment(void *arg) {
+    DaneWatku *dane = arg;
+    ll suma = 0;
+    for (long i = dane->indeks_start; i < dane->indeks_koniec; ++i)
+        suma += dane->tablica[i];
+
+    *(dane->wynik) = suma;
+    pthread_exit(NULL);
+}
+
+// Funkcja zwracająca aktualny czas w mikrosekundach
+double zmierz_czas_mikrosekundy() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (double)tv.tv_sec * 1000000 + (double)tv.tv_usec;
+}
+
+// Funkcja mierząca czas wykonania sumowania wielowątkowego
+double zmierz_czas_watki(long n, long k, long liczba_watkow) {
+    long rozmiar_calkowity = n * k;
+
+    // Tworzymy tablicę n*k elementów i wypełniamy losowymi wartościami
+    int *tablica = malloc(sizeof(int) * rozmiar_calkowity);
+    srand((unsigned)time(NULL));
+    for (long i = 0; i < rozmiar_calkowity; ++i)
+        tablica[i] = rand() % 10;
+
+    // Tablica do przechowywania sum każdej podtablicy
+    ll *wyniki_podtablic = malloc(sizeof(ll) * k);
+
+    pthread_t watki[liczba_watkow];
+    DaneWatku dane_watkow[liczba_watkow];
+
+    // Obliczamy ile podtablic przypada na jeden wątek
+    long podtablice_na_watek = k / liczba_watkow;
+    long pozostale_podtablice = k % liczba_watkow; // pierwsze wątki dostają po jednej podtablicy więcej
+    long aktualna_podtablica = 0;
+
+    double czas_start = zmierz_czas_mikrosekundy();
+
+    // Tworzenie wątków
+    for (long i = 0; i < liczba_watkow; i++) {
+        long ile_podtablic_dla_tego_watku = podtablice_na_watek + (i < pozostale_podtablice ? 1 : 0);
+
+        dane_watkow[i].tablica = tablica;
+        dane_watkow[i].indeks_start = aktualna_podtablica * n;
+        dane_watkow[i].indeks_koniec = dane_watkow[i].indeks_start + ile_podtablic_dla_tego_watku * n;
+        dane_watkow[i].wynik = &wyniki_podtablic[aktualna_podtablica];
+
+        aktualna_podtablica += ile_podtablic_dla_tego_watku;
+
+        pthread_create(&watki[i], NULL, sumuj_fragment, &dane_watkow[i]);
+    }
+
+    // Czekamy aż wszystkie wątki zakończą pracę
+    for (long i = 0; i < liczba_watkow; ++i)
+        pthread_join(watki[i], NULL);
+
+    double czas_koniec = zmierz_czas_mikrosekundy();
+
+    free(tablica);
+    free(wyniki_podtablic);
+
+    return czas_koniec - czas_start;
+}
+
+// Funkcja autotuningu – szuka optymalnych wartości n, k i liczby wątków
+void autotune(long m) {
+    double min_czas = INFINITY;
+    long najlepsze_n = 1, najlepsze_k = m, najlepsza_liczba_watkow = 1;
+
+    for (long n = 1; n <= m; n++) {
+        if (m % n != 0) continue; // k musi być liczbą całkowitą
+        long k = m / n;
+
+        for (long liczba_watkow = 1; liczba_watkow <= 10; liczba_watkow++) {
+            double czas = zmierz_czas_watki(n, k, liczba_watkow);
+            if (czas < min_czas && czas > 0) {
+                min_czas = czas;
+                najlepsze_n = n;
+                najlepsze_k = k;
+                najlepsza_liczba_watkow = liczba_watkow;
+            }
+        }
+    }
+
+    printf("Optymalne parametry: n=%ld, k=%ld, liczba_watkow=%ld\n", najlepsze_n, najlepsze_k, najlepsza_liczba_watkow);
+    printf("Najkrótszy czas: %.2f mikrosekund\n", min_czas);
+}
+
+int main(int argc, char *argv[]) {
+    long m = strtol(argv[1], NULL, 10); // odczyt wartości m z argumentu programu
+    autotune(m);                        // szukamy optymalnych parametrów
+    return 0;
+}
+
