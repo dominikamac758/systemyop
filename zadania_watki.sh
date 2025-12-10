@@ -6,20 +6,18 @@ nano psum.c
 #include <pthread.h>
 #include <sys/time.h>
 
-typedef long long ll;
-
 // Struktura danych przekazywana do wątku
 typedef struct {
     int *tablica;        // wskaźnik do całej tablicy liczb
     long indeks_start;   // indeks początkowy fragmentu
     long indeks_koniec;  // indeks końcowy fragmentu
-    ll wynik;            // miejsce na sumę obliczoną przez wątek
+    long long wynik;     // miejsce na sumę obliczoną przez wątek
 } DaneWatku;
 
 // Funkcja wykonywana przez każdy wątek – sumuje fragment tablicy
 void *sumuj_fragment(void *arg){
     DaneWatku *dane = arg;
-    ll lokalna_suma = 0;
+    long long lokalna_suma = 0;
 
     // Sumowanie fragmentu tablicy od indeksu start do end-1
     for (long i = dane->indeks_start; i < dane->indeks_koniec; i++) {
@@ -39,7 +37,6 @@ double zmierz_czas() {
     return (double)tv.tv_sec * 1000000 + (double)tv.tv_usec;
 }
 
-
 int main(int argc, char *argv[]) {
 
     // Pobranie n, k, t z argumentów programu
@@ -47,7 +44,7 @@ int main(int argc, char *argv[]) {
     long k = strtol(argv[2], NULL, 10); // liczba podtablic
     long t = strtol(argv[3], NULL, 10); // liczba wątków
 
-    ll rozmiar_calkowity = n * k;
+    long long rozmiar_calkowity = n * k;
     int *tablica = malloc(sizeof(int) * rozmiar_calkowity);
 
     // Losowe wypełnienie tablicy wartościami 0–9
@@ -60,7 +57,7 @@ int main(int argc, char *argv[]) {
   
     double czas_start_sekw = zmierz_czas();
 
-    ll suma_sekwencyjna = 0;
+    long long suma_sekwencyjna = 0;
     for (long i = 0; i < rozmiar_calkowity; i++) {
         suma_sekwencyjna += tablica[i];
     }
@@ -69,7 +66,6 @@ int main(int argc, char *argv[]) {
 
     printf("Suma sekwencyjna: %lld", suma_sekwencyjna);
     printf("\nCzas sekwencyjny: %.2f mikrosekund", czas_koniec_sekw - czas_start_sekw);
-
 
     // SUMOWANIE WIELOWĄTKOWE
 
@@ -110,7 +106,7 @@ int main(int argc, char *argv[]) {
     double czas_koniec_watki = zmierz_czas();
 
     // Sumujemy wyniki zwrócone przez wątki
-    ll suma_watkow = 0;
+    long long suma_watkow = 0;
     for (int i = 0; i < t; i++) {
         suma_watkow += dane_watkow[i]->wynik;
         free(dane_watkow[i]);
@@ -133,20 +129,18 @@ Zadanie 4.0
 #include <pthread.h>
 #include <sys/time.h>
 
-typedef long long ll;
-
 // Struktura danych dla wątku
 typedef struct {
     int *tablica;        // wskaźnik do całej tablicy
     long indeks_start;   // indeks startowy fragmentu
     long indeks_koniec;  // indeks końcowy fragmentu
-    ll *wynik;           // miejsce na zapis wyniku obliczonego przez wątek
+    long long *wynik;    // miejsce na zapis wyniku obliczonego przez wątek
 } DaneWatku;
 
 // Funkcja wykonywana przez wątek – sumuje fragment tablicy
 void* sumuj_fragment(void *arg) {
     DaneWatku *dane = arg;
-    ll suma = 0;
+    long long suma = 0;
 
     for (long i = dane->indeks_start; i < dane->indeks_koniec; ++i)
         suma += dane->tablica[i];
@@ -173,14 +167,13 @@ double zmierz_czas_watki(long n, long k, long t) {
         tablica[i] = rand() % 10;
 
     // Tablica do przechowywania sum podtablic
-    ll *wyniki_podtablic = malloc(sizeof(ll) * k);
+    long long *wyniki_podtablic = malloc(sizeof(long long) * k);
 
     pthread_t watki[t];
     DaneWatku dane_watkow[t];
 
-    // Ile podtablic przypada na jeden wątek
     long podtablice_na_watek = k / t;
-    long nadmiarowe = k % t; // pierwsze wątki dostaną po 1 podtablicy więcej
+    long nadmiarowe = k % t;
     long aktualna_podtablica = 0;
 
     double czas_start = zmierz_czas_mikrosekundy();
@@ -205,7 +198,6 @@ double zmierz_czas_watki(long n, long k, long t) {
 
     double czas_koniec = zmierz_czas_mikrosekundy();
 
-    // Zwolnienie pamięci
     free(tablica);
     free(wyniki_podtablic);
 
@@ -213,15 +205,12 @@ double zmierz_czas_watki(long n, long k, long t) {
 }
 
 int main(int argc, char *argv[]) {
-    // Tablice testowych wartości n, k i t
     long n_values[] = {1000, 5000, 10000, 20000, 50000};
     long k_values[] = {10, 50, 100, 200, 500};
     long t_values[] = {1, 2, 4, 8, 16};
 
-    // Plik CSV do zapisu wyników
-    FILE *fp = fopen("wyniki_nkt.csv", "w");
+    FILE *fp = fopen("wyniki_zadanie.csv", "w");
 
-    // Pętla po wszystkich kombinacjach n, k i t
     for (size_t i = 0; i < sizeof(n_values) / sizeof(n_values[0]); ++i) {
         for (size_t j = 0; j < sizeof(k_values) / sizeof(k_values[0]); ++j) {
             for (size_t l = 0; l < sizeof(t_values) / sizeof(t_values[0]); ++l) {
@@ -229,21 +218,18 @@ int main(int argc, char *argv[]) {
                 long k = k_values[j];
                 long t = t_values[l];
 
-                // Mierzymy czas wykonania sumowania wielowątkowego
                 double czas = zmierz_czas_watki(n, k, t);
 
-                if (czas >= 0) {
-                    printf("n=%ld, k=%ld, t=%ld: %.2f mikrosekund\n", n, k, t, czas);
-                    fprintf(fp, "%ld,%ld,%ld,%.2f\n", n, k, t, czas);
-                }
+                printf("n=%ld, k=%ld, t=%ld: %.2f mikrosekund\n", n, k, t, czas);
+                fprintf(fp, "%ld,%ld,%ld,%.2f\n", n, k, t, czas);
             }
         }
     }
 
     fclose(fp);
-
     return 0;
 }
+
 
 gcc -O2 -pthread -o psum_speedup psum_speedup.c
 ls -l psum_speedup
@@ -256,7 +242,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Wczytanie danych z CSV
-dane = pd.read_csv("wyniki_nkt.csv")
+dane = pd.read_csv("wyniki_zadanie.csv")
 
 # Wybieramy jedną wartość n i k do wykresu speedupu
 n_val = 1000
